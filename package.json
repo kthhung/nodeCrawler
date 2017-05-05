@@ -1,0 +1,10 @@
+{
+  "name": "nodecrawl",
+  "version": "1.0.0",
+  "description": "Web crawler using Node.js",
+  "main": "crawler.js",
+  "dependencies": {
+    "cheerio": "^0.19.0",
+    "request": "^2.65.0"
+  }
+}
