@@ -4,19 +4,22 @@ var cheerio = require('cheerio');
 var pagesCrawled = {};
 var numPagesCrawled = 0;
 var pagesToCrawl = [];
+var maxPagesToCrawl = 2;
 
 var initialPage = "http://www.businessinsider.com/";
+var wordList = [];
+var concordance = {};
 
-
+console.log('Commencing crawler.js');
 pagesToCrawl.push(initialPage);
 crawl();
 
 function crawl() {
-  if (numPagesCrawled >= 100){
-    console.log('Reached maximum number of crawls allowed');
+  if (numPagesCrawled >= maxPagesToCrawl){
+    console.log('Reached maximum number of crawls');
     return;
   }
-  var nextPage = pagesToCrawl.pop();
+  var nextPage = pagesToCrawl.shift();
   if (nextPage in pagesCrawled) {
     crawl();
   } else {
@@ -36,7 +39,8 @@ function scrape(url, callback) {
     }
     if (res.statusCode === 200) {
       var $ = cheerio.load(body);
-      console.log('Page title: ' + $('title').text());
+      var title = $('title').text();
+      console.log('Page title: ' + title);
 
       // Collect Links
       console.log('Collecting links...');
@@ -45,6 +49,34 @@ function scrape(url, callback) {
       findRel.each(function() {
         pagesToCrawl.push($(this).attr('href'));
       });
+
+      // Get keywords by calculating term frequency (tf)
+      var text = $('div.KonaBody.post-content').children().first().text();
+      // console.log(text);
+      var tokens = text.split(/\W+/);
+      for (var i = 0; i<tokens.length; i++) {
+        var word = tokens[i].toLowerCase();
+        if(!/\d+/.test(word)) {
+          if (concordance[word] === undefined) {
+            concordance[word] = {
+              tf: 1,
+            };
+            wordList.push(word);
+          } else {
+            concordance[word].tf = concordance[word].tf + 1;
+          }
+        }
+      }
+
+      wordList.sort(function(a, b){
+        return (concordance[b].tf - concordance[a].tf);
+      });
+
+      for (var i = 0; i < wordList.length; i++) {
+        var key = wordList[i];
+        console.log(key + " " + concordance[key].tf);
+      }
+
       callback();
     }
   });
